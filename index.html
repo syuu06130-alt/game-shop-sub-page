@@ -5,21 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MOHA GAMING</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
-<script>
-const firebaseConfig={
-  apiKey:"AIzaSyDug0mvi3uVmJIWuC8icwmAF1Z72gnUjd4",
-  authDomain:"moha-shopping.firebaseapp.com",
-  projectId:"moha-shopping",
-  storageBucket:"moha-shopping.firebasestorage.app",
-  messagingSenderId:"222702722753",
-  appId:"1:222702722753:web:7ea1837cf9de585a75be40",
-  measurementId:"G-YS8QVLZS4X"
-};
-firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
-</script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -31,6 +16,56 @@ body{background:#030508;color:#e0f0ff;font-family:'Rajdhani',sans-serif;min-heig
 ::-webkit-scrollbar-thumb{background:#1a3a5c;border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:#00f0ff}
 </style>
+<script>
+// ─── FIRESTORE REST API ───────────────────────────────────────────────────────
+const _FB_BASE="https://firestore.googleapis.com/v1/projects/moha-shopping/databases/(default)/documents";
+const _FB_KEY="AIzaSyDug0mvi3uVmJIWuC8icwmAF1Z72gnUjd4";
+
+function _parseVal(v){
+  if(!v)return null;
+  if(v.stringValue!==undefined)return v.stringValue;
+  if(v.integerValue!==undefined)return Number(v.integerValue);
+  if(v.doubleValue!==undefined)return Number(v.doubleValue);
+  if(v.booleanValue!==undefined)return v.booleanValue;
+  return null;
+}
+function _parseDoc(doc){
+  const id=doc.name.split("/").pop();
+  const data={};
+  for(const[k,v]of Object.entries(doc.fields||{}))data[k]=_parseVal(v);
+  return{id,...data};
+}
+function _toFields(obj){
+  const f={};
+  for(const[k,v]of Object.entries(obj)){
+    if(v===null||v===undefined)continue;
+    if(typeof v==="string")f[k]={stringValue:v};
+    else if(typeof v==="number"&&Number.isInteger(v))f[k]={integerValue:String(v)};
+    else if(typeof v==="number")f[k]={doubleValue:v};
+    else if(typeof v==="boolean")f[k]={booleanValue:v};
+  }
+  return f;
+}
+async function fbGetProducts(){
+  const r=await fetch(`${_FB_BASE}/products?key=${_FB_KEY}&pageSize=300`);
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  const d=await r.json();
+  return(d.documents||[]).map(_parseDoc);
+}
+async function fbAddProduct(prod){
+  const r=await fetch(`${_FB_BASE}/products?key=${_FB_KEY}`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({fields:_toFields(prod)})
+  });
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||"HTTP "+r.status);}
+  return _parseDoc(await r.json());
+}
+async function fbDeleteProduct(id){
+  const r=await fetch(`${_FB_BASE}/products/${id}?key=${_FB_KEY}`,{method:"DELETE"});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+}
+</script>
 </head>
 <body>
 <div id="root"></div>
@@ -219,40 +254,18 @@ function App(){
   const [cat,setCat]=useState("すべて");
   const [search,setSearch]=useState("");
 
+  // Firestoreから商品をポーリング（10秒ごと）
   useEffect(()=>{
-    let unsub=null;
-    let poll=null;
-
-    async function fetchOnce(){
+    let active=true;
+    async function load(){
       try{
-        const snap=await db.collection("products").get();
-        setProducts(snap.docs.map(d=>({id:d.id,...d.data()})));
-      }catch(e){console.warn("[MOHA] fetch error:",e);}
+        const prods=await fbGetProducts();
+        if(active)setProducts(prods);
+      }catch(e){console.warn("[MOHA] 商品取得失敗:",e);}
     }
-
-    function startPolling(){
-      fetchOnce();
-      poll=setInterval(fetchOnce,10000);
-    }
-
-    try{
-      unsub=db.collection("products").onSnapshot(
-        snap=>{setProducts(snap.docs.map(d=>({id:d.id,...d.data()})));},
-        err=>{
-          console.warn("[MOHA] onSnapshot失敗、ポーリングに切替:",err);
-          if(unsub){try{unsub();}catch(_){} unsub=null;}
-          startPolling();
-        }
-      );
-    }catch(e){
-      console.warn("[MOHA] onSnapshot初期化失敗:",e);
-      startPolling();
-    }
-
-    return()=>{
-      if(unsub)try{unsub();}catch(_){}
-      if(poll)clearInterval(poll);
-    };
+    load();
+    const t=setInterval(load,10000);
+    return()=>{active=false;clearInterval(t);};
   },[]);
   useEffect(()=>{setLS("moha_users",users)},[users]);
 
@@ -617,14 +630,21 @@ function AdminModal({close,products,setProducts,users}){
     const imgUrl=form.img||"https://placehold.co/400x175/070f18/00f0ff?text=NO+IMAGE";
     const newProd={name:form.name.trim(),cat:form.cat,price:parseInt(form.price)||0,stock:parseInt(form.stock)||0,img:imgUrl,desc:form.desc,createdAt:Date.now()};
     try{
-      await db.collection("products").add(newProd);
+      const added=await fbAddProduct(newProd);
+      setProducts(pp=>[added,...pp]);
       setOk("✓ 商品を追加しました！");
       setForm({name:"",cat:CATS[1],price:"",img:"",desc:"",stock:""});
       setImgPreview("");
       setTimeout(()=>setOk(""),3500);
-    }catch(e){setErr("エラー: "+e.message);}
+    }catch(e){setErr("追加失敗: "+e.message);}
   }
-  async function delProd(id){if(window.confirm("この商品を削除しますか？"))try{await db.collection("products").doc(id).delete();}catch(e){alert("削除失敗: "+e.message);}}
+  async function delProd(id){
+    if(!window.confirm("この商品を削除しますか？"))return;
+    try{
+      await fbDeleteProduct(id);
+      setProducts(pp=>pp.filter(p=>p.id!==id));
+    }catch(e){alert("削除失敗: "+e.message);}
+  }
 
   return(
     <div className="mbg" onClick={e=>{if(e.target===e.currentTarget){stopCamera();close()}}}>
