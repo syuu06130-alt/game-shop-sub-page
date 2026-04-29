@@ -3,12 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MOHA GAMING | リアルタイムストア</title>
+<title>MOHA GAMING</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Firebase SDK (v10 compat) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<!-- React & Babel -->
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={
+  apiKey:"AIzaSyDug0mvi3uVmJIWuC8icwmAF1Z72gnUjd4",
+  authDomain:"moha-shopping.firebaseapp.com",
+  projectId:"moha-shopping",
+  storageBucket:"moha-shopping.firebasestorage.app",
+  messagingSenderId:"222702722753",
+  appId:"1:222702722753:web:7ea1837cf9de585a75be40",
+  measurementId:"G-YS8QVLZS4X"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+</script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -26,22 +37,6 @@ body{background:#030508;color:#e0f0ff;font-family:'Rajdhani',sans-serif;min-heig
 <script type="text/babel">
 const {useState,useEffect,useRef}=React;
 
-// ---------- FIREBASE CONFIG (リアルタイム商品同期) ----------
-const firebaseConfig = {
-  apiKey: "AIzaSyDug0mvi3uVmJIWuC8icwmAF1Z72gnUjd4",
-  authDomain: "moha-shopping.firebaseapp.com",
-  projectId: "moha-shopping",
-  storageBucket: "moha-shopping.firebasestorage.app",
-  messagingSenderId: "222702722753",
-  appId: "1:222702722753:web:7ea1837cf9de585a75be40",
-  measurementId: "G-YS8QVLZS4X"
-};
-// 初期化
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const productsCollection = db.collection("products");
-
-// ---------- 定数 ----------
 const ADMIN_EMAIL="@Moha0917";
 const ADMIN_PASS="19194545";
 const TIKTOK_URL="https://www.tiktok.com/@user5410860884966";
@@ -54,278 +49,214 @@ const WARNINGS=[
   "🔒 個人情報は厳重に管理されます",
 ];
 
-// デフォルト商品シード (Firestore 空の場合のみ投入)
-const DEFAULT_PRODUCTS = [
-  { id: 1730011001001, name: "Raptor メカニカルキーボード", cat: "キーボード", price: 14800, stock: 12, img: "https://placehold.co/400x175/070f18/00f0ff?text=KEYBOARD+RAPTOR", desc: "リニア赤軸 / RGBバックライト / アルミ削り出し" },
-  { id: 1730011001002, name: "Viper X ゲーミングマウス", cat: "マウス", price: 7900, stock: 8, img: "https://placehold.co/400x175/070f18/00f0ff?text=VIPER+MOUSE", desc: "26000DPI / 光学式 / PTFEフィート" },
-  { id: 1730011001003, name: "Auric 7.1 ヘッドセット", cat: "ヘッドセット", price: 12800, stock: 5, img: "https://placehold.co/400x175/070f18/00f0ff?text=HEADSET+AURIC", desc: "仮想サラウンド / ノイズキャンセリングマイク" },
-  { id: 1730011001004, name: "EON 240Hz ゲーミングモニター", cat: "モニター", price: 49800, stock: 3, img: "https://placehold.co/400x175/070f18/00f0ff?text=MONITOR+240Hz", desc: "24.5インチ / 1ms / G-Sync互換" },
-  { id: 1730011001005, name: "NOVA RTX 4070 SUPER", cat: "GPU", price: 89900, stock: 4, img: "https://placehold.co/400x175/070f18/00f0ff?text=RTX+4070", desc: "12GB GDDR6X / DLSS3 / 4Kゲーミング" },
-  { id: 1730011001006, name: "RYZEN 7 7800X3D", cat: "CPU", price: 59800, stock: 7, img: "https://placehold.co/400x175/070f18/00f0ff?text=RYZEN+7800X3D", desc: "8コア16スレッド / 3Dキャッシュ" },
-  { id: 1730011001007, name: "Titan ゲーミングチェア", cat: "チェア", price: 39900, stock: 2, img: "https://placehold.co/400x175/070f18/00f0ff?text=GAMING+CHAIR", desc: "人間工学設計 / 4Dアームレスト / 耐久性抜群" },
-  { id: 1730011001008, name: "Stealth マウスパッド XL", cat: "マウスパッド", price: 3800, stock: 20, img: "https://placehold.co/400x175/070f18/00f0ff?text=MOUSEPAD+XL", desc: "防水 / ゴム底 / 厚さ4mm" }
-];
+const S=`
+.app{min-height:100vh;background:#030508;color:#e0f0ff;position:relative}
+.scanline{pointer-events:none;position:fixed;inset:0;z-index:9999;background:repeating-linear-gradient(0deg,rgba(0,240,255,0.015) 0px,transparent 1px,transparent 3px);animation:scanmove 8s linear infinite}
+@keyframes scanmove{0%{background-position:0 0}100%{background-position:0 -100px}}
 
-// ----- ヘルパー (ローカルユーザー管理はそのまま)
+/* NAV */
+.nav{background:rgba(3,5,8,0.97);border-bottom:1px solid #0d2a40;padding:0 24px;display:flex;align-items:center;gap:10px;height:64px;position:sticky;top:0;z-index:500;backdrop-filter:blur(12px)}
+.logo{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#00f0ff;letter-spacing:3px;text-shadow:0 0 40px rgba(0,240,255,0.5),0 0 80px rgba(0,240,255,0.2);flex:1;cursor:pointer;user-select:none}
+.logo span{color:#fff;opacity:.7}
+.logo em{color:#00f0ff;font-style:normal}
+.nbtn{background:transparent;border:1px solid #1a3a5c;color:#a0c8e0;padding:8px 16px;border-radius:5px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;transition:all .2s;white-space:nowrap;letter-spacing:.5px}
+.nbtn:hover{border-color:#00f0ff;color:#00f0ff;background:#00f0ff0a}
+.nbtn.prim{background:linear-gradient(135deg,#002266,#0055cc);border-color:#00a0ff;color:#00f0ff}
+.nbtn.prim:hover{background:linear-gradient(135deg,#003388,#0077ff)}
+.nbtn.red{background:linear-gradient(135deg,#440011,#880022);border-color:#ff3366;color:#ff8899}
+.nbtn.red:hover{background:linear-gradient(135deg,#660022,#cc0033)}
+.badge{position:absolute;top:-8px;right:-8px;background:#ff3366;color:#fff;border-radius:50%;width:20px;height:20px;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 0 8px #ff336688}
+.utag{background:#00f0ff15;border:1px solid #00f0ff40;color:#00f0ff;padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600}
+.atag{background:#ff007a15;border:1px solid #ff007a50;color:#ff007a;padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 #ff007a30}50%{box-shadow:0 0 0 6px transparent}}
+.cartbtn{position:relative}
+
+/* HERO */
+.hero{padding:70px 24px 50px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,#00f0ff08 0%,transparent 70%);pointer-events:none}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,240,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,0.04) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);pointer-events:none}
+.hero h1{font-family:'Orbitron',monospace;font-size:clamp(22px,5vw,52px);font-weight:900;color:#fff;line-height:1.2;position:relative;text-shadow:0 0 60px rgba(255,255,255,0.1)}
+.hero h1 .glow{color:#00f0ff;text-shadow:0 0 30px rgba(0,240,255,0.8),0 0 60px rgba(0,240,255,0.4)}
+.hero p{color:#5a7a9a;margin-top:14px;font-size:16px;font-weight:500;letter-spacing:.5px;position:relative}
+.hero-line{width:80px;height:2px;background:linear-gradient(90deg,transparent,#00f0ff,transparent);margin:20px auto 0;animation:lineflash 3s ease-in-out infinite}
+@keyframes lineflash{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* SEARCH + CATS */
+.srow{padding:16px 24px;display:flex;gap:10px;background:#030508;border-bottom:1px solid #0d2a40}
+.sinp{flex:1;background:#070f18;border:1px solid #1a3a5c;border-radius:7px;padding:11px 16px;color:#e0f0ff;font-family:'Rajdhani',sans-serif;font-size:14px;outline:none;transition:all .2s}
+.sinp:focus{border-color:#00f0ff;background:#0a1520;box-shadow:0 0 0 3px #00f0ff10}
+.sinp::placeholder{color:#2a4a6a}
+.cats{display:flex;gap:8px;padding:14px 24px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid #0d2a40;background:#030508}
+.cats::-webkit-scrollbar{display:none}
+.cbt{white-space:nowrap;padding:7px 18px;border:1px solid #1a3a5c;border-radius:20px;background:transparent;color:#4a6a8a;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;transition:all .2s;letter-spacing:.5px}
+.cbt.act{border-color:#00f0ff;color:#00f0ff;background:#00f0ff12;box-shadow:0 0 10px #00f0ff20}
+.cbt:hover:not(.act){border-color:#2a5a7a;color:#8ab0d0}
+.result-count{padding:12px 24px;color:#3a5a7a;font-size:13px;font-weight:500}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px;padding:0 24px 40px}
+.card{background:#070f18;border:1px solid #1a3a5c;border-radius:12px;overflow:hidden;transition:all .25s;cursor:default;position:relative}
+.card:hover{border-color:#00f0ff60;transform:translateY(-4px);box-shadow:0 12px 40px #00f0ff10,0 0 0 1px #00f0ff20}
+.cimg-wrap{position:relative;overflow:hidden;height:175px}
+.cimg{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.card:hover .cimg{transform:scale(1.05)}
+.cimg-overlay{position:absolute;inset:0;background:linear-gradient(0deg,#070f18 0%,transparent 50%)}
+.cbody{padding:15px}
+.ccat{font-size:11px;color:#00a0cc;text-transform:uppercase;letter-spacing:1.5px;font-weight:700}
+.cname{font-size:15px;font-weight:700;margin:5px 0 4px;color:#e0f0ff;line-height:1.3}
+.cprice{font-family:'Orbitron',monospace;font-size:18px;color:#00f0ff;font-weight:700;text-shadow:0 0 15px rgba(0,240,255,0.4)}
+.cstock{font-size:11px;color:#3a5a7a;margin-top:4px;font-weight:600}
+.cstock.low{color:#ffaa00}
+.cstock.out{color:#ff3366}
+.cdesc{font-size:12px;color:#4a6a8a;margin-top:8px;line-height:1.6}
+.abtn{width:100%;margin-top:13px;padding:10px;background:linear-gradient(135deg,#002266,#0055cc);border:1px solid #00a0ff40;border-radius:6px;color:#00f0ff;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;transition:all .2s;letter-spacing:.5px}
+.abtn:hover{background:linear-gradient(135deg,#003388,#0077ff);border-color:#00f0ff;box-shadow:0 4px 20px #00f0ff20}
+.abtn:disabled{opacity:.4;cursor:not-allowed}
+.empty{text-align:center;padding:80px;color:#2a4a6a;font-size:16px;font-family:'Orbitron',monospace}
+
+/* MODALS */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.modal{background:#050b14;border:1px solid #1a3a5c;border-radius:14px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 0 60px #00f0ff08}
+.modal-wide{max-width:640px}
+.mhead{padding:20px 22px;border-bottom:1px solid #1a3a5c;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#050b14;z-index:1}
+.mhead h2{font-family:'Orbitron',monospace;font-size:15px;color:#00f0ff;letter-spacing:1.5px;text-shadow:0 0 20px rgba(0,240,255,0.4)}
+.xbtn{background:transparent;border:none;color:#4a6a8a;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;border-radius:4px;transition:all .2s}
+.xbtn:hover{color:#ff3366;background:#ff336610}
+.mbody{padding:22px}
+.tabrow{display:flex;border-bottom:1px solid #1a3a5c;margin-bottom:20px}
+.tab{flex:1;padding:12px;text-align:center;cursor:pointer;font-size:13px;color:#4a6a8a;border-bottom:2px solid transparent;transition:all .2s;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.tab.act{color:#00f0ff;border-bottom-color:#00f0ff}
+.inp{width:100%;background:#0a1830;border:1px solid #1a3a5c;border-radius:7px;padding:12px 14px;color:#e0f0ff;font-family:'Rajdhani',sans-serif;font-size:14px;margin-bottom:13px;outline:none;transition:all .2s;font-weight:500}
+.inp:focus{border-color:#00f0ff;background:#0d2040;box-shadow:0 0 0 3px #00f0ff0a}
+.inp::placeholder{color:#2a4a6a}
+select.inp option{background:#0a1520}
+textarea.inp{resize:vertical;min-height:80px}
+.inp-label{font-size:12px;color:#4a6a8a;margin-bottom:5px;margin-top:2px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;display:block}
+.bfull{width:100%;padding:13px;border:none;border-radius:8px;cursor:pointer;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;transition:all .2s;letter-spacing:1px}
+.bcyan{background:linear-gradient(135deg,#003399,#0077ff);color:#fff;border:1px solid #0099ff40}
+.bcyan:hover{background:linear-gradient(135deg,#0044bb,#0099ff);box-shadow:0 4px 20px #0077ff30}
+.bgray{background:#0a1520;color:#6a90b0;border:1px solid #1a3a5c}
+.bgray:hover{border-color:#4a6a8a;color:#a0c0e0}
+.err{color:#ff6699;font-size:13px;margin-bottom:13px;padding:10px 13px;background:#ff336610;border-radius:6px;border-left:3px solid #ff3366;font-weight:600}
+.ok{color:#00ff88;font-size:13px;margin-bottom:13px;padding:10px 13px;background:#00ff8810;border-radius:6px;border-left:3px solid #00ff88;font-weight:600}
+.div{display:flex;align-items:center;gap:10px;margin:14px 0;color:#2a4a6a;font-size:12px;font-weight:600;letter-spacing:.5px}
+.div::before,.div::after{content:'';flex:1;height:1px;background:#1a3a5c}
+.gbtn{width:100%;padding:12px;border:1px solid #2a3a5c;border-radius:7px;background:#0a1520;color:#c0d8f0;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:14px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;margin-bottom:13px;font-weight:700}
+.gbtn:hover{border-color:#4285f4;color:#7aaaff;background:#0d1f35}
+
+/* CART */
+.citem{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid #0d2030}
+.cimg2{width:68px;height:68px;object-fit:cover;border-radius:8px;border:1px solid #1a3a5c;flex-shrink:0}
+.cinfo{flex:1}
+.cname2{font-size:14px;font-weight:700;line-height:1.3;color:#d0e8ff}
+.cprice2{font-family:'Orbitron',monospace;font-size:13px;color:#00f0ff;margin-top:4px}
+.qctrl{display:flex;align-items:center;gap:10px;margin-top:9px}
+.qbtn{background:#0d2030;border:1px solid #1a3a5c;color:#e0f0ff;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.qbtn:hover{background:#00f0ff;color:#030508;border-color:#00f0ff}
+.delbtn{margin-left:auto;background:transparent;border:none;color:#ff3366;cursor:pointer;font-size:13px;padding:4px;border-radius:4px;transition:all .2s;font-weight:700}
+.delbtn:hover{background:#ff336615}
+.trow{display:flex;justify-content:space-between;padding:16px 0;font-size:15px;font-weight:700;border-top:1px solid #1a3a5c;margin-top:6px}
+.tprice{font-family:'Orbitron',monospace;color:#00f0ff;font-size:20px;text-shadow:0 0 15px rgba(0,240,255,0.4)}
+
+/* ORDER */
+.ttbox{background:#070f18;border:1px solid #00f0ff25;border-radius:12px;padding:20px;text-align:center;margin-bottom:18px}
+.ttbox h3{font-family:'Orbitron',monospace;font-size:13px;color:#00f0ff;margin-bottom:10px;letter-spacing:1px}
+.ttbox p{font-size:13px;color:#8ab0d0;line-height:1.8}
+.ttlink{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:11px 24px;background:linear-gradient(135deg,#cc0040,#ff0050);border:none;border-radius:25px;color:#fff;text-decoration:none;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;font-family:'Rajdhani',sans-serif;letter-spacing:.5px;box-shadow:0 4px 20px rgba(255,0,80,0.3)}
+.ttlink:hover{transform:scale(1.04);box-shadow:0 6px 25px rgba(255,0,80,0.4)}
+.warn-list{margin-bottom:18px}
+.warn-item{display:flex;align-items:center;gap:10px;padding:10px 13px;background:#070f18;border:1px solid #1a3a5c;border-radius:7px;margin-bottom:8px;font-size:13px;color:#8ab0d0;font-weight:600}
+
+/* ADMIN */
+.asec h3{font-family:'Orbitron',monospace;font-size:11px;color:#00f0ff;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #0d2030;letter-spacing:1.5px}
+.prow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #0d2030}
+.piimg{width:46px;height:46px;object-fit:cover;border-radius:6px;border:1px solid #1a3a5c;flex-shrink:0}
+.pinfo{flex:1;font-size:13px}
+.pname2{font-weight:700;line-height:1.3;color:#d0e8ff}
+.pmeta{color:#00a0cc;font-family:'Orbitron',monospace;font-size:10px;margin-top:3px}
+.dbtn{background:#ff336612;border:1px solid #ff336640;color:#ff6699;padding:6px 11px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;transition:all .2s}
+.dbtn:hover{background:#ff3366;color:#fff;border-color:#ff3366}
+.urow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #0d2030}
+.uav{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#002266,#0055cc);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#00f0ff;flex-shrink:0}
+.uinfo{font-size:13px}
+.uname3{font-weight:700;color:#d0e8ff}
+.uemail{color:#4a6a8a;font-size:11px;margin-top:2px}
+.img-prev{width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:13px;border:1px solid #1a3a5c}
+.upload-area{background:#070f18;border:2px dashed #1a3a5c;border-radius:9px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:13px;position:relative}
+.upload-area:hover{border-color:#00f0ff;background:#0a1520}
+.upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-text{color:#4a6a8a;font-size:13px;font-weight:600}
+.upload-text span{color:#00f0ff}
+.camera-btn{background:#0a1830;border:1px dashed #1a3a5c;border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;color:#6a90b0;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:13px;width:100%;transition:all .2s;font-family:'Rajdhani',sans-serif}
+.camera-btn:hover{border-color:#00f0ff;color:#00f0ff}
+video.cam{width:100%;border-radius:8px;border:1px solid #1a3a5c;margin-bottom:10px;display:block}
+.snap-btn{width:100%;padding:10px;background:linear-gradient(135deg,#004466,#00aacc);border:none;border-radius:7px;color:#fff;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;margin-bottom:10px}
+.close-cam{width:100%;padding:8px;background:transparent;border:1px solid #1a3a5c;border-radius:7px;color:#6a90b0;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:13px}
+
+/* FOOTER */
+.footer{text-align:center;padding:32px;border-top:1px solid #0d2030;color:#2a4a6a;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px}
+.footer span{color:#1a3a5c}
+
+/* NOTICE MODAL */
+.notice-box{background:#070f18;border:1px solid #ffaa0030;border-radius:10px;padding:18px;margin-bottom:18px}
+.notice-box h3{font-family:'Orbitron',monospace;font-size:12px;color:#ffaa00;margin-bottom:12px;letter-spacing:1px;text-align:center}
+.notice-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;font-size:13px;color:#8ab0d0;font-weight:600;border-bottom:1px solid #0d2030}
+.notice-item:last-child{border-bottom:none}
+`;
+
+// ─── UTILS ───────────────────────────────────────
 function getLS(k,def){try{const v=localStorage.getItem(k);return v?JSON.parse(v):def}catch{return def}}
 function setLS(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 
-// ----- メインAPP (Firestoreリアルタイム同期版) -----
+// ─── MAIN APP ────────────────────────────────────
 function App(){
   const [user,setUser]=useState(null);
   const [isAdmin,setIsAdmin]=useState(false);
   const [modal,setModal]=useState(null);
   const [cart,setCart]=useState([]);
-  const [products,setProducts]=useState([]);      // Firestoreリアルタイム
+  const [products,setProducts]=useState([]);
   const [users,setUsers]=useState(getLS("moha_users",[]));
   const [cat,setCat]=useState("すべて");
   const [search,setSearch]=useState("");
-  const [loadingProducts,setLoadingProducts]=useState(true);
 
-  // ---- Firestore リアルタイムリスナー + 初期シード ----
-  useEffect(() => {
-    let unsubscribe = () => {};
-    const initListener = async () => {
-      // 空チェック: コレクションが空ならデフォルト商品 + localStorage商品をシード
-      const snapshot = await productsCollection.limit(1).get();
-      if (snapshot.empty) {
-        // シードする商品リスト (localStorageに旧商品があればマージ)
-        const existingLocal = getLS("moha_products", []);
-        let seedItems = [...DEFAULT_PRODUCTS];
-        // ローカル商品をid重複を避けて追加
-        for (const localProd of existingLocal) {
-          if (!seedItems.some(sp => sp.id === localProd.id) && localProd.id) {
-            seedItems.push({ ...localProd, id: localProd.id });
-          }
-        }
-        // Firestoreに一括書き込み (set with custom id)
-        const batch = db.batch();
-        for (const prod of seedItems) {
-          const docRef = productsCollection.doc(prod.id.toString());
-          batch.set(docRef, { ...prod, id: prod.id });
-        }
-        await batch.commit();
-        console.log("✅ 初期商品をFirestoreにシードしました");
-      }
-      // リアルタイムリスナー開始
-      unsubscribe = productsCollection.onSnapshot((querySnapshot) => {
-        const prodList = [];
-        querySnapshot.forEach(doc => {
-          const data = doc.data();
-          prodList.push({
-            id: data.id,
-            name: data.name,
-            cat: data.cat,
-            price: data.price,
-            stock: data.stock,
-            img: data.img || "https://placehold.co/400x175/070f18/00f0ff?text=NO+IMAGE",
-            desc: data.desc || ""
-          });
-        });
-        // id降順で新しい順に表示
-        prodList.sort((a,b) => b.id - a.id);
-        setProducts(prodList);
-        setLoadingProducts(false);
-      }, (error) => {
-        console.error("Firestoreエラー:", error);
-        setLoadingProducts(false);
+  useEffect(()=>{
+    const unsub=db.collection("products").orderBy("createdAt","desc").onSnapshot(snap=>{
+      setProducts(snap.docs.map(d=>({id:d.id,...d.data()})));
+    },()=>{
+      const unsub2=db.collection("products").onSnapshot(snap=>{
+        setProducts(snap.docs.map(d=>({id:d.id,...d.data()})));
       });
-    };
-    initListener();
-    return () => unsubscribe && unsubscribe();
-  }, []);
+    });
+    return()=>unsub();
+  },[]);
+  useEffect(()=>{setLS("moha_users",users)},[users]);
 
-  // ユーザー向け: カート保存は従来通りlocalStorage
-  useEffect(() => { setLS("moha_users", users); }, [users]);
-  useEffect(() => { setLS("moha_cart", cart); }, [cart]);
-  useEffect(() => {
-    const savedCart = getLS("moha_cart", []);
-    if(savedCart.length) setCart(savedCart);
-  }, []);
-
-  // 商品フィルタリング
-  const filtered = products.filter(p => {
-    const matchCat = cat === "すべて" || p.cat === cat;
-    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.cat.toLowerCase().includes(search.toLowerCase()) || (p.desc && p.desc.toLowerCase().includes(search.toLowerCase()));
-    return matchCat && matchSearch;
+  const filtered=products.filter(p=>{
+    const mc=cat==="すべて"||p.cat===cat;
+    const ms=!search||p.name.toLowerCase().includes(search.toLowerCase())||p.cat.toLowerCase().includes(search.toLowerCase())||p.desc.toLowerCase().includes(search.toLowerCase());
+    return mc&&ms;
   });
 
-  const cartCount = cart.reduce((s,i)=>s+i.qty,0);
-  const cartTotal = cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const cartCount=cart.reduce((s,i)=>s+i.qty,0);
+  const cartTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
 
   function addToCart(p){
-    if(!user && !isAdmin){ setModal("login"); return; }
-    setCart(c => {
-      const existing = c.find(i=>i.id===p.id);
-      if(existing) return c.map(i=>i.id===p.id ? {...i, qty: i.qty+1} : i);
-      return [...c, {...p, qty:1}];
+    if(!user&&!isAdmin){setModal("login");return;}
+    setCart(c=>{
+      const ex=c.find(i=>i.id===p.id);
+      if(ex)return c.map(i=>i.id===p.id?{...i,qty:i.qty+1}:i);
+      return[...c,{...p,qty:1}];
     });
   }
-  function removeFromCart(id){ setCart(c => c.filter(i=>i.id!==id)); }
-  function changeQty(id, delta){ setCart(c => c.map(i=>i.id===id ? {...i, qty: Math.max(1, i.qty+delta)} : i)); }
-  function logout(){ setUser(null); setIsAdmin(false); setCart([]); setModal(null); }
+  function removeFromCart(id){setCart(c=>c.filter(i=>i.id!==id))}
+  function changeQty(id,d){setCart(c=>c.map(i=>i.id===id?{...i,qty:Math.max(1,i.qty+d)}:i))}
+  function logout(){setUser(null);setIsAdmin(false);setCart([]);setModal(null)}
 
-  // ---- Firebase 商品操作 (管理者用) ----
-  const addProductToFirestore = async (productData) => {
-    const newId = Date.now();
-    const newProduct = {
-      id: newId,
-      name: productData.name,
-      cat: productData.cat,
-      price: Number(productData.price),
-      stock: Number(productData.stock),
-      img: productData.img || "https://placehold.co/400x175/070f18/00f0ff?text=NEW+GEAR",
-      desc: productData.desc || ""
-    };
-    await productsCollection.doc(newId.toString()).set(newProduct);
-    // リスナーが自動更新するのでsetProducts不要
-  };
-
-  const deleteProductFromFirestore = async (productId) => {
-    await productsCollection.doc(productId.toString()).delete();
-  };
-
-  // 管理者パネル用コールバック
-  const handleAdminAdd = (formData) => addProductToFirestore(formData);
-  const handleAdminDelete = (prodId) => deleteProductFromFirestore(prodId);
-
-  return (
+  return(
     <div className="app">
-      <style>{`
-        .app{min-height:100vh;background:#030508;color:#e0f0ff;position:relative}
-        .scanline{pointer-events:none;position:fixed;inset:0;z-index:9999;background:repeating-linear-gradient(0deg,rgba(0,240,255,0.015) 0px,transparent 1px,transparent 3px);animation:scanmove 8s linear infinite}
-        @keyframes scanmove{0%{background-position:0 0}100%{background-position:0 -100px}}
-        .nav{background:rgba(3,5,8,0.97);border-bottom:1px solid #0d2a40;padding:0 24px;display:flex;align-items:center;gap:10px;height:64px;position:sticky;top:0;z-index:500;backdrop-filter:blur(12px)}
-        .logo{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:#00f0ff;letter-spacing:3px;text-shadow:0 0 40px rgba(0,240,255,0.5),0 0 80px rgba(0,240,255,0.2);flex:1;cursor:pointer;user-select:none}
-        .logo span{color:#fff;opacity:.7}
-        .logo em{color:#00f0ff;font-style:normal}
-        .nbtn{background:transparent;border:1px solid #1a3a5c;color:#a0c8e0;padding:8px 16px;border-radius:5px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;transition:all .2s;white-space:nowrap;letter-spacing:.5px}
-        .nbtn:hover{border-color:#00f0ff;color:#00f0ff;background:#00f0ff0a}
-        .nbtn.prim{background:linear-gradient(135deg,#002266,#0055cc);border-color:#00a0ff;color:#00f0ff}
-        .nbtn.prim:hover{background:linear-gradient(135deg,#003388,#0077ff)}
-        .nbtn.red{background:linear-gradient(135deg,#440011,#880022);border-color:#ff3366;color:#ff8899}
-        .nbtn.red:hover{background:linear-gradient(135deg,#660022,#cc0033)}
-        .badge{position:absolute;top:-8px;right:-8px;background:#ff3366;color:#fff;border-radius:50%;width:20px;height:20px;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:900;box-shadow:0 0 8px #ff336688}
-        .utag{background:#00f0ff15;border:1px solid #00f0ff40;color:#00f0ff;padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600}
-        .atag{background:#ff007a15;border:1px solid #ff007a50;color:#ff007a;padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600;animation:pulse 2s ease-in-out infinite}
-        @keyframes pulse{0%,100%{box-shadow:0 0 0 0 #ff007a30}50%{box-shadow:0 0 0 6px transparent}}
-        .cartbtn{position:relative}
-        .hero{padding:70px 24px 50px;text-align:center;position:relative;overflow:hidden}
-        .hero::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,#00f0ff08 0%,transparent 70%);pointer-events:none}
-        .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,240,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,240,255,0.04) 1px,transparent 1px);background-size:40px 40px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);pointer-events:none}
-        .hero h1{font-family:'Orbitron',monospace;font-size:clamp(22px,5vw,52px);font-weight:900;color:#fff;line-height:1.2;position:relative;text-shadow:0 0 60px rgba(255,255,255,0.1)}
-        .hero h1 .glow{color:#00f0ff;text-shadow:0 0 30px rgba(0,240,255,0.8),0 0 60px rgba(0,240,255,0.4)}
-        .hero p{color:#5a7a9a;margin-top:14px;font-size:16px;font-weight:500;letter-spacing:.5px;position:relative}
-        .hero-line{width:80px;height:2px;background:linear-gradient(90deg,transparent,#00f0ff,transparent);margin:20px auto 0;animation:lineflash 3s ease-in-out infinite}
-        @keyframes lineflash{0%,100%{opacity:.4}50%{opacity:1}}
-        .srow{padding:16px 24px;display:flex;gap:10px;background:#030508;border-bottom:1px solid #0d2a40}
-        .sinp{flex:1;background:#070f18;border:1px solid #1a3a5c;border-radius:7px;padding:11px 16px;color:#e0f0ff;font-family:'Rajdhani',sans-serif;font-size:14px;outline:none;transition:all .2s}
-        .sinp:focus{border-color:#00f0ff;background:#0a1520;box-shadow:0 0 0 3px #00f0ff10}
-        .sinp::placeholder{color:#2a4a6a}
-        .cats{display:flex;gap:8px;padding:14px 24px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid #0d2a40;background:#030508}
-        .cats::-webkit-scrollbar{display:none}
-        .cbt{white-space:nowrap;padding:7px 18px;border:1px solid #1a3a5c;border-radius:20px;background:transparent;color:#4a6a8a;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;transition:all .2s;letter-spacing:.5px}
-        .cbt.act{border-color:#00f0ff;color:#00f0ff;background:#00f0ff12;box-shadow:0 0 10px #00f0ff20}
-        .cbt:hover:not(.act){border-color:#2a5a7a;color:#8ab0d0}
-        .result-count{padding:12px 24px;color:#3a5a7a;font-size:13px;font-weight:500}
-        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:20px;padding:0 24px 40px}
-        .card{background:#070f18;border:1px solid #1a3a5c;border-radius:12px;overflow:hidden;transition:all .25s;cursor:default;position:relative}
-        .card:hover{border-color:#00f0ff60;transform:translateY(-4px);box-shadow:0 12px 40px #00f0ff10,0 0 0 1px #00f0ff20}
-        .cimg-wrap{position:relative;overflow:hidden;height:175px}
-        .cimg{width:100%;height:100%;object-fit:cover;transition:transform .4s}
-        .card:hover .cimg{transform:scale(1.05)}
-        .cimg-overlay{position:absolute;inset:0;background:linear-gradient(0deg,#070f18 0%,transparent 50%)}
-        .cbody{padding:15px}
-        .ccat{font-size:11px;color:#00a0cc;text-transform:uppercase;letter-spacing:1.5px;font-weight:700}
-        .cname{font-size:15px;font-weight:700;margin:5px 0 4px;color:#e0f0ff;line-height:1.3}
-        .cprice{font-family:'Orbitron',monospace;font-size:18px;color:#00f0ff;font-weight:700;text-shadow:0 0 15px rgba(0,240,255,0.4)}
-        .cstock{font-size:11px;color:#3a5a7a;margin-top:4px;font-weight:600}
-        .cstock.low{color:#ffaa00}
-        .cstock.out{color:#ff3366}
-        .cdesc{font-size:12px;color:#4a6a8a;margin-top:8px;line-height:1.6}
-        .abtn{width:100%;margin-top:13px;padding:10px;background:linear-gradient(135deg,#002266,#0055cc);border:1px solid #00a0ff40;border-radius:6px;color:#00f0ff;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;transition:all .2s;letter-spacing:.5px}
-        .abtn:hover{background:linear-gradient(135deg,#003388,#0077ff);border-color:#00f0ff;box-shadow:0 4px 20px #00f0ff20}
-        .abtn:disabled{opacity:.4;cursor:not-allowed}
-        .empty{text-align:center;padding:80px;color:#2a4a6a;font-size:16px;font-family:'Orbitron',monospace}
-        .mbg{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
-        .modal{background:#050b14;border:1px solid #1a3a5c;border-radius:14px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;box-shadow:0 0 60px #00f0ff08}
-        .modal-wide{max-width:640px}
-        .mhead{padding:20px 22px;border-bottom:1px solid #1a3a5c;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#050b14;z-index:1}
-        .mhead h2{font-family:'Orbitron',monospace;font-size:15px;color:#00f0ff;letter-spacing:1.5px;text-shadow:0 0 20px rgba(0,240,255,0.4)}
-        .xbtn{background:transparent;border:none;color:#4a6a8a;font-size:20px;cursor:pointer;padding:4px 8px;line-height:1;border-radius:4px;transition:all .2s}
-        .xbtn:hover{color:#ff3366;background:#ff336610}
-        .mbody{padding:22px}
-        .tabrow{display:flex;border-bottom:1px solid #1a3a5c;margin-bottom:20px}
-        .tab{flex:1;padding:12px;text-align:center;cursor:pointer;font-size:13px;color:#4a6a8a;border-bottom:2px solid transparent;transition:all .2s;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
-        .tab.act{color:#00f0ff;border-bottom-color:#00f0ff}
-        .inp{width:100%;background:#0a1830;border:1px solid #1a3a5c;border-radius:7px;padding:12px 14px;color:#e0f0ff;font-family:'Rajdhani',sans-serif;font-size:14px;margin-bottom:13px;outline:none;transition:all .2s;font-weight:500}
-        .inp:focus{border-color:#00f0ff;background:#0d2040;box-shadow:0 0 0 3px #00f0ff0a}
-        .inp::placeholder{color:#2a4a6a}
-        select.inp option{background:#0a1520}
-        textarea.inp{resize:vertical;min-height:80px}
-        .inp-label{font-size:12px;color:#4a6a8a;margin-bottom:5px;margin-top:2px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;display:block}
-        .bfull{width:100%;padding:13px;border:none;border-radius:8px;cursor:pointer;font-family:'Orbitron',monospace;font-size:12px;font-weight:700;transition:all .2s;letter-spacing:1px}
-        .bcyan{background:linear-gradient(135deg,#003399,#0077ff);color:#fff;border:1px solid #0099ff40}
-        .bcyan:hover{background:linear-gradient(135deg,#0044bb,#0099ff);box-shadow:0 4px 20px #0077ff30}
-        .bgray{background:#0a1520;color:#6a90b0;border:1px solid #1a3a5c}
-        .bgray:hover{border-color:#4a6a8a;color:#a0c0e0}
-        .err{color:#ff6699;font-size:13px;margin-bottom:13px;padding:10px 13px;background:#ff336610;border-radius:6px;border-left:3px solid #ff3366;font-weight:600}
-        .ok{color:#00ff88;font-size:13px;margin-bottom:13px;padding:10px 13px;background:#00ff8810;border-radius:6px;border-left:3px solid #00ff88;font-weight:600}
-        .div{display:flex;align-items:center;gap:10px;margin:14px 0;color:#2a4a6a;font-size:12px;font-weight:600;letter-spacing:.5px}
-        .div::before,.div::after{content:'';flex:1;height:1px;background:#1a3a5c}
-        .gbtn{width:100%;padding:12px;border:1px solid #2a3a5c;border-radius:7px;background:#0a1520;color:#c0d8f0;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:14px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;margin-bottom:13px;font-weight:700}
-        .gbtn:hover{border-color:#4285f4;color:#7aaaff;background:#0d1f35}
-        .citem{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid #0d2030}
-        .cimg2{width:68px;height:68px;object-fit:cover;border-radius:8px;border:1px solid #1a3a5c;flex-shrink:0}
-        .cinfo{flex:1}
-        .cname2{font-size:14px;font-weight:700;line-height:1.3;color:#d0e8ff}
-        .cprice2{font-family:'Orbitron',monospace;font-size:13px;color:#00f0ff;margin-top:4px}
-        .qctrl{display:flex;align-items:center;gap:10px;margin-top:9px}
-        .qbtn{background:#0d2030;border:1px solid #1a3a5c;color:#e0f0ff;width:28px;height:28px;border-radius:5px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
-        .qbtn:hover{background:#00f0ff;color:#030508;border-color:#00f0ff}
-        .delbtn{margin-left:auto;background:transparent;border:none;color:#ff3366;cursor:pointer;font-size:13px;padding:4px;border-radius:4px;transition:all .2s;font-weight:700}
-        .delbtn:hover{background:#ff336615}
-        .trow{display:flex;justify-content:space-between;padding:16px 0;font-size:15px;font-weight:700;border-top:1px solid #1a3a5c;margin-top:6px}
-        .tprice{font-family:'Orbitron',monospace;color:#00f0ff;font-size:20px;text-shadow:0 0 15px rgba(0,240,255,0.4)}
-        .ttbox{background:#070f18;border:1px solid #00f0ff25;border-radius:12px;padding:20px;text-align:center;margin-bottom:18px}
-        .ttbox h3{font-family:'Orbitron',monospace;font-size:13px;color:#00f0ff;margin-bottom:10px;letter-spacing:1px}
-        .ttbox p{font-size:13px;color:#8ab0d0;line-height:1.8}
-        .ttlink{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:11px 24px;background:linear-gradient(135deg,#cc0040,#ff0050);border:none;border-radius:25px;color:#fff;text-decoration:none;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;font-family:'Rajdhani',sans-serif;letter-spacing:.5px;box-shadow:0 4px 20px rgba(255,0,80,0.3)}
-        .ttlink:hover{transform:scale(1.04);box-shadow:0 6px 25px rgba(255,0,80,0.4)}
-        .warn-list{margin-bottom:18px}
-        .warn-item{display:flex;align-items:center;gap:10px;padding:10px 13px;background:#070f18;border:1px solid #1a3a5c;border-radius:7px;margin-bottom:8px;font-size:13px;color:#8ab0d0;font-weight:600}
-        .asec h3{font-family:'Orbitron',monospace;font-size:11px;color:#00f0ff;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #0d2030;letter-spacing:1.5px}
-        .prow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #0d2030}
-        .piimg{width:46px;height:46px;object-fit:cover;border-radius:6px;border:1px solid #1a3a5c;flex-shrink:0}
-        .pinfo{flex:1;font-size:13px}
-        .pname2{font-weight:700;line-height:1.3;color:#d0e8ff}
-        .pmeta{color:#00a0cc;font-family:'Orbitron',monospace;font-size:10px;margin-top:3px}
-        .dbtn{background:#ff336612;border:1px solid #ff336640;color:#ff6699;padding:6px 11px;border-radius:5px;cursor:pointer;font-size:12px;font-family:'Rajdhani',sans-serif;font-weight:700;transition:all .2s}
-        .dbtn:hover{background:#ff3366;color:#fff;border-color:#ff3366}
-        .urow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #0d2030}
-        .uav{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#002266,#0055cc);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:#00f0ff;flex-shrink:0}
-        .uinfo{font-size:13px}
-        .uname3{font-weight:700;color:#d0e8ff}
-        .uemail{color:#4a6a8a;font-size:11px;margin-top:2px}
-        .img-prev{width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:13px;border:1px solid #1a3a5c}
-        .upload-area{background:#070f18;border:2px dashed #1a3a5c;border-radius:9px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:13px;position:relative}
-        .upload-area:hover{border-color:#00f0ff;background:#0a1520}
-        .upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-        .upload-text{color:#4a6a8a;font-size:13px;font-weight:600}
-        .upload-text span{color:#00f0ff}
-        .camera-btn{background:#0a1830;border:1px dashed #1a3a5c;border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:center;gap:8px;color:#6a90b0;cursor:pointer;font-size:13px;font-weight:600;margin-bottom:13px;width:100%;transition:all .2s;font-family:'Rajdhani',sans-serif}
-        .camera-btn:hover{border-color:#00f0ff;color:#00f0ff}
-        video.cam{width:100%;border-radius:8px;border:1px solid #1a3a5c;margin-bottom:10px;display:block}
-        .snap-btn{width:100%;padding:10px;background:linear-gradient(135deg,#004466,#00aacc);border:none;border-radius:7px;color:#fff;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;margin-bottom:10px}
-        .close-cam{width:100%;padding:8px;background:transparent;border:1px solid #1a3a5c;border-radius:7px;color:#6a90b0;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:13px}
-        .footer{text-align:center;padding:32px;border-top:1px solid #0d2030;color:#2a4a6a;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px}
-        .footer span{color:#1a3a5c}
-        .notice-box{background:#070f18;border:1px solid #ffaa0030;border-radius:10px;padding:18px;margin-bottom:18px}
-        .notice-box h3{font-family:'Orbitron',monospace;font-size:12px;color:#ffaa00;margin-bottom:12px;letter-spacing:1px;text-align:center}
-        .notice-item{display:flex;align-items:flex-start;gap:8px;padding:7px 0;font-size:13px;color:#8ab0d0;font-weight:600;border-bottom:1px solid #0d2030}
-        .notice-item:last-child{border-bottom:none}
-      `}</style>
+      <style>{S}</style>
       <div className="scanline"/>
+
       {/* NAV */}
       <nav className="nav">
         <div className="logo" onClick={()=>{setCat("すべて");setSearch("")}}>MOHA<em>GAMING</em></div>
@@ -333,48 +264,284 @@ function App(){
         {user&&!isAdmin&&<span className="utag">👤 {user.name}</span>}
         {isAdmin&&<button className="nbtn prim" onClick={()=>setModal("admin")}>⚙ 管理画面</button>}
         {(user||isAdmin)&&<button className="nbtn red" onClick={logout}>ログアウト</button>}
-        {!user&&!isAdmin&&(<><button className="nbtn" onClick={()=>setModal("login")}>ログイン</button><button className="nbtn prim" onClick={()=>setModal("signup")}>新規登録</button></>)}
-        <div className="cartbtn"><button className="nbtn" onClick={()=>(user||isAdmin)?setModal("cart"):setModal("login")}>🛒 カート{cartCount>0&&<span className="badge">{cartCount}</span>}</button></div>
+        {!user&&!isAdmin&&(
+          <>
+            <button className="nbtn" onClick={()=>setModal("login")}>ログイン</button>
+            <button className="nbtn prim" onClick={()=>setModal("signup")}>新規登録</button>
+          </>
+        )}
+        <div className="cartbtn">
+          <button className="nbtn" onClick={()=>(user||isAdmin)?setModal("cart"):setModal("login")}>
+            🛒 カート{cartCount>0&&<span className="badge">{cartCount}</span>}
+          </button>
+        </div>
       </nav>
-      <div className="hero"><div className="hero-grid"/><h1>最高の<span className="glow">ゲーミング体験</span>を<br/>あなたの手に</h1><p>プロ仕様ゲーミングデバイス　|　全品正規品保証　|　即日発送対応</p><div className="hero-line"/></div>
-      <div className="srow"><input className="sinp" placeholder="🔍　商品を検索..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
-      <div className="cats">{CATS.map(c=><button key={c} className={"cbt"+(cat===c?" act":"")} onClick={()=>setCat(c)}>{c}</button>)}</div>
-      <div className="result-count">{loadingProducts ? "🔄 商品情報を同期中..." : `${filtered.length}件の商品`}</div>
-      {loadingProducts ? <div className="empty">⚡ リアルタイムサーバーと接続中...</div> : filtered.length===0 ? <div className="empty">😞 商品が見つかりませんでした</div> : <div className="grid">{filtered.map(p=><Card key={p.id} p={p} add={addToCart} loggedIn={!!(user||isAdmin)}/>)}</div>}
-      <footer className="footer">© 2025 MOHA GAMING <span>—</span> REAL-TIME SYNC</footer>
 
-      {modal==="login" && <AuthModal mode="login" close={()=>setModal(null)} setModal={setModal} setUser={setUser} setIsAdmin={setIsAdmin} users={users} setUsers={setUsers}/>}
-      {modal==="signup" && <AuthModal mode="signup" close={()=>setModal(null)} setModal={setModal} setUser={setUser} setIsAdmin={setIsAdmin} users={users} setUsers={setUsers}/>}
-      {modal==="cart" && <CartModal close={()=>setModal(null)} cart={cart} remove={removeFromCart} changeQty={changeQty} total={cartTotal} setModal={setModal}/>}
-      {modal==="notice" && <NoticeModal close={()=>setModal(null)} cart={cart} total={cartTotal} setModal={setModal}/>}
-      {modal==="order" && <OrderModal close={()=>setModal(null)} cart={cart} total={cartTotal} setCart={setCart} setModal={setModal}/>}
-      {modal==="admin" && isAdmin && <AdminModal close={()=>setModal(null)} onAddProduct={handleAdminAdd} onDeleteProduct={handleAdminDelete} users={users} />}
+      {/* HERO */}
+      <div className="hero">
+        <div className="hero-grid"/>
+        <h1>最高の<span className="glow">ゲーミング体験</span>を<br/>あなたの手に</h1>
+        <p>プロ仕様ゲーミングデバイス　|　全品正規品保証　|　即日発送対応</p>
+        <div className="hero-line"/>
+      </div>
+
+      {/* SEARCH */}
+      <div className="srow">
+        <input className="sinp" placeholder="🔍　商品を検索..." value={search} onChange={e=>setSearch(e.target.value)}/>
+      </div>
+
+      {/* CATEGORIES */}
+      <div className="cats">
+        {CATS.map(c=><button key={c} className={"cbt"+(cat===c?" act":"")} onClick={()=>setCat(c)}>{c}</button>)}
+      </div>
+
+      <div className="result-count">{filtered.length}件の商品</div>
+
+      {/* PRODUCT GRID */}
+      {filtered.length===0
+        ?<div className="empty">😞 商品が見つかりませんでした</div>
+        :<div className="grid">{filtered.map(p=><Card key={p.id} p={p} add={addToCart} loggedIn={!!(user||isAdmin)}/>)}</div>
+      }
+
+      <footer className="footer">© 2025 MOHA GAMING <span>—</span> ALL RIGHTS RESERVED</footer>
+
+      {/* MODALS */}
+      {modal==="login"&&<AuthModal mode="login" close={()=>setModal(null)} setModal={setModal} setUser={setUser} setIsAdmin={setIsAdmin} users={users} setUsers={setUsers}/>}
+      {modal==="signup"&&<AuthModal mode="signup" close={()=>setModal(null)} setModal={setModal} setUser={setUser} setIsAdmin={setIsAdmin} users={users} setUsers={setUsers}/>}
+      {modal==="cart"&&<CartModal close={()=>setModal(null)} cart={cart} remove={removeFromCart} changeQty={changeQty} total={cartTotal} setModal={setModal}/>}
+      {modal==="notice"&&<NoticeModal close={()=>setModal(null)} cart={cart} total={cartTotal} setModal={setModal}/>}
+      {modal==="order"&&<OrderModal close={()=>setModal(null)} cart={cart} total={cartTotal} setCart={setCart} setModal={setModal}/>}
+      {modal==="admin"&&isAdmin&&<AdminModal close={()=>setModal(null)} products={products} setProducts={setProducts} users={users}/>}
     </div>
   );
 }
 
-// ---- 再利用コンポーネント (Card/Auth/カート/Order) はほぼオリジナルを維持 ----
+// ─── CARD ──────────────────────────────────────
 function Card({p,add,loggedIn}){
-  const stockClass = p.stock===0 ? "out" : p.stock<=5 ? "low" : "";
-  const stockLabel = p.stock===0 ? "在庫切れ" : `在庫: ${p.stock}個${p.stock<=5 ? " (残りわずか!)":""}`;
-  return(<div className="card"><div className="cimg-wrap"><img className="cimg" src={p.img} alt={p.name} onError={e=>e.target.src="https://placehold.co/400x175/070f18/00f0ff?text=NO+IMAGE"}/><div className="cimg-overlay"/></div><div className="cbody"><div className="ccat">{p.cat}</div><div className="cname">{p.name}</div><div className="cprice">¥{p.price.toLocaleString()}</div><div className={`cstock ${stockClass}`}>{stockLabel}</div>{p.desc&&<div className="cdesc">{p.desc}</div>}<button className="abtn" onClick={()=>add(p)} disabled={p.stock===0}>{p.stock===0 ? "在庫切れ" : "🛒　カートに追加"}</button></div></div>);
+  const stockClass=p.stock===0?"out":p.stock<=5?"low":"";
+  const stockLabel=p.stock===0?"在庫切れ":`在庫: ${p.stock}個${p.stock<=5?" (残りわずか!)":""}`;
+  return(
+    <div className="card">
+      <div className="cimg-wrap">
+        <img className="cimg" src={p.img} alt={p.name} onError={e=>{e.target.src="https://placehold.co/400x175/070f18/00f0ff?text=NO+IMAGE"}}/>
+        <div className="cimg-overlay"/>
+      </div>
+      <div className="cbody">
+        <div className="ccat">{p.cat}</div>
+        <div className="cname">{p.name}</div>
+        <div className="cprice">¥{p.price.toLocaleString()}</div>
+        <div className={`cstock ${stockClass}`}>{stockLabel}</div>
+        {p.desc&&<div className="cdesc">{p.desc}</div>}
+        <button className="abtn" onClick={()=>add(p)} disabled={p.stock===0}>
+          {p.stock===0?"在庫切れ":"🛒　カートに追加"}
+        </button>
+      </div>
+    </div>
+  );
 }
 
+// ─── AUTH MODAL ─────────────────────────────────
 function AuthModal({mode,close,setModal,setUser,setIsAdmin,users,setUsers}){
   const [tab,setTab]=useState(mode==="signup"?"signup":"login");
-  const [email,setEmail]=useState(""); const [pass,setPass]=useState(""); const [name,setName]=useState(""); const [err,setErr]=useState("");
-  const handleLogin=()=>{setErr(""); if(!email.trim()||!pass.trim()){setErr("入力してください");return;} if(email.trim()===ADMIN_EMAIL&&pass===ADMIN_PASS){setIsAdmin(true);close();return;} const u=users.find(u=>u.email===email.trim()&&u.pass===pass); if(!u){setErr("メールアドレスまたはパスワードが間違っています");return;} setUser(u);close();};
-  const handleSignup=()=>{setErr(""); if(!name.trim()||!email.trim()||!pass.trim()){setErr("すべての項目を入力してください");return;} if(pass.length!==4||!/^\d{4}$/.test(pass)){setErr("パスワードは数字4桁で入力してください");return;} if(users.find(u=>u.email===email.trim())){setErr("このアカウント名は既に登録されています");return;} const nu={id:Date.now(),name:name.trim(),email:email.trim(),pass,isGoogle:false}; setUsers(u=>[...u,nu]); setUser(nu); close();};
-  const handleGoogle=()=>{const googleEmail="google_"+Date.now()+"@gmail.com"; const gu={id:Date.now(),name:"Googleユーザー",email:googleEmail,pass:"",isGoogle:true}; setUsers(u=>[...u,gu]); setUser(gu); close();};
-  return(<div className="mbg" onClick={e=>{if(e.target===e.currentTarget)close()}}><div className="modal"><div className="mhead"><h2>⚡ MOHA GAMING</h2><button className="xbtn" onClick={close}>✕</button></div><div className="mbody"><div className="tabrow"><div className={"tab"+(tab==="login"?" act":"")} onClick={()=>{setTab("login");setErr("")}}>ログイン</div><div className={"tab"+(tab==="signup"?" act":"")} onClick={()=>{setTab("signup");setErr("")}}>新規登録</div></div>{err&&<div className="err">⚠ {err}</div>}{tab==="login"&&(<><button className="gbtn" onClick={handleGoogle}><svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Googleでログイン</button><div className="div">または</div><label className="inp-label">アカウント名</label><input className="inp" placeholder="メールアドレスまたはアカウント名" value={email} onChange={e=>setEmail(e.target.value)}/><label className="inp-label">パスワード</label><input className="inp" type="password" placeholder="パスワード" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/><button className="bfull bcyan" onClick={handleLogin}>ログイン</button><div style={{textAlign:"center",marginTop:"13px",fontSize:"12px",color:"#3a5a7a"}}>管理者は専用アカウントでログイン<br/><span style={{color:"#2a4a6a"}}>アカウント: @Moha0917</span></div></>)}{tab==="signup"&&(<><button className="gbtn" onClick={handleGoogle}><svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Googleで登録</button><div className="div">または</div><label className="inp-label">本名</label><input className="inp" placeholder="本名を入力してください" value={name} onChange={e=>setName(e.target.value)}/><label className="inp-label">アカウント名（メールアドレス等）</label><input className="inp" placeholder="アカウント名" value={email} onChange={e=>setEmail(e.target.value)}/><label className="inp-label">パスワード（数字4桁）</label><input className="inp" type="password" placeholder="4桁の数字" maxLength="4" value={pass} onChange={e=>setPass(e.target.value.replace(/\D/g,"").slice(0,4))} onKeyDown={e=>e.key==="Enter"&&handleSignup()}/><button className="bfull bcyan" onClick={handleSignup}>アカウントを作成する</button></>)}</div></div></div>);
+  const [email,setEmail]=useState("");
+  const [pass,setPass]=useState("");
+  const [name,setName]=useState("");
+  const [err,setErr]=useState("");
+
+  function handleLogin(){
+    setErr("");
+    if(!email.trim()||!pass.trim()){setErr("入力してください");return;}
+    // Admin check
+    if(email.trim()===ADMIN_EMAIL&&pass===ADMIN_PASS){setIsAdmin(true);close();return;}
+    // User check
+    const u=users.find(u=>u.email===email.trim()&&u.pass===pass);
+    if(!u){setErr("メールアドレスまたはパスワードが間違っています");return;}
+    setUser(u);close();
+  }
+
+  function handleSignup(){
+    setErr("");
+    if(!name.trim()||!email.trim()||!pass.trim()){setErr("すべての項目を入力してください");return;}
+    if(pass.length!==4||!/^\d{4}$/.test(pass)){setErr("パスワードは数字4桁で入力してください");return;}
+    if(email.trim()===ADMIN_EMAIL){setErr("このアカウント名は使用できません");return;}
+    if(users.find(u=>u.email===email.trim())){setErr("このアカウント名は既に登録されています");return;}
+    const nu={id:Date.now(),name:name.trim(),email:email.trim(),pass,isGoogle:false};
+    setUsers(u=>[...u,nu]);
+    setUser(nu);
+    close();
+  }
+
+  function handleGoogle(){
+    // Google login: create if not exists, or find existing
+    const googleEmail="google_"+Date.now()+"@gmail.com";
+    const gu={id:Date.now(),name:"Googleユーザー",email:googleEmail,pass:"",isGoogle:true};
+    setUsers(u=>[...u,gu]);
+    setUser(gu);
+    close();
+  }
+
+  return(
+    <div className="mbg" onClick={e=>{if(e.target===e.currentTarget)close()}}>
+      <div className="modal">
+        <div className="mhead">
+          <h2>⚡ MOHA GAMING</h2>
+          <button className="xbtn" onClick={close}>✕</button>
+        </div>
+        <div className="mbody">
+          <div className="tabrow">
+            <div className={"tab"+(tab==="login"?" act":"")} onClick={()=>{setTab("login");setErr("")}}>ログイン</div>
+            <div className={"tab"+(tab==="signup"?" act":"")} onClick={()=>{setTab("signup");setErr("")}}>新規登録</div>
+          </div>
+
+          {err&&<div className="err">⚠ {err}</div>}
+
+          {tab==="login"&&(
+            <>
+              <button className="gbtn" onClick={handleGoogle}>
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Googleでログイン
+              </button>
+              <div className="div">または</div>
+              <label className="inp-label">アカウント名</label>
+              <input className="inp" placeholder="メールアドレスまたはアカウント名" value={email} onChange={e=>setEmail(e.target.value)}/>
+              <label className="inp-label">パスワード</label>
+              <input className="inp" type="password" placeholder="パスワード" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+              <button className="bfull bcyan" onClick={handleLogin}>ログイン</button>
+              <div style={{textAlign:"center",marginTop:"13px",fontSize:"12px",color:"#3a5a7a",lineHeight:"1.8"}}>
+                管理者は専用アカウントでログインしてください<br/>
+                <span style={{color:"#2a4a6a"}}>アカウント名: @Moha0917</span>
+              </div>
+            </>
+          )}
+
+          {tab==="signup"&&(
+            <>
+              <button className="gbtn" onClick={handleGoogle}>
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Googleで登録
+              </button>
+              <div className="div">または</div>
+              <label className="inp-label">本名</label>
+              <input className="inp" placeholder="本名を入力してください" value={name} onChange={e=>setName(e.target.value)}/>
+              <label className="inp-label">アカウント名（メールアドレス等）</label>
+              <input className="inp" placeholder="アカウント名" value={email} onChange={e=>setEmail(e.target.value)}/>
+              <label className="inp-label">パスワード（数字4桁）</label>
+              <input className="inp" type="password" placeholder="4桁の数字" maxLength="4" value={pass} onChange={e=>setPass(e.target.value.replace(/\D/g,"").slice(0,4))} onKeyDown={e=>e.key==="Enter"&&handleSignup()}/>
+              <button className="bfull bcyan" onClick={handleSignup}>アカウントを作成する</button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
-function CartModal({close,cart,remove,changeQty,total,setModal}){return(<div className="mbg" onClick={e=>{if(e.target===e.currentTarget)close()}}><div className="modal"><div className="mhead"><h2>🛒 カート ({cart.length}点)</h2><button className="xbtn" onClick={close}>✕</button></div><div className="mbody">{cart.length===0?<div className="empty" style={{padding:"40px"}}>カートは空です</div>:<>{cart.map(item=>(<div key={item.id} className="citem"><img className="cimg2" src={item.img} alt={item.name} onError={e=>e.target.src="https://placehold.co/68/070f18/00f0ff?text=IMG"}/><div className="cinfo"><div className="cname2">{item.name}</div><div className="cprice2">¥{item.price.toLocaleString()}</div><div className="qctrl"><button className="qbtn" onClick={()=>changeQty(item.id,-1)}>−</button><span style={{fontSize:"15px",minWidth:"24px",textAlign:"center",fontWeight:"700"}}>{item.qty}</span><button className="qbtn" onClick={()=>changeQty(item.id,1)}>＋</button><span style={{fontSize:"12px",color:"#4a6a8a",marginLeft:"2px"}}>¥{(item.price*item.qty).toLocaleString()}</span><button className="delbtn" onClick={()=>remove(item.id)}>✕</button></div></div></div>))}<div className="trow"><span>合計</span><span className="tprice">¥{total.toLocaleString()}</span></div><button className="bfull bcyan" style={{marginBottom:"10px"}} onClick={()=>{close();setModal("notice")}}>購入手続きへ →</button><button className="bfull bgray" onClick={close}>買い物を続ける</button></>}</div></div></div>);}
-function NoticeModal({close,cart,total,setModal}){return(<div className="mbg" onClick={e=>{if(e.target===e.currentTarget)close()}}><div className="modal"><div className="mhead"><h2>⚠ ご購入の注意事項</h2><button className="xbtn" onClick={close}>✕</button></div><div className="mbody"><div className="notice-box"><h3>購入前にご確認ください</h3>{WARNINGS.map((w,i)=><div key={i} className="notice-item">{w}</div>)}</div><button className="bfull bcyan" style={{marginBottom:"10px"}} onClick={()=>{close();setModal("order")}}>OK　→　購入ページへ</button><button className="bfull bgray" onClick={()=>{close();setModal("cart")}}>← カートに戻る</button></div></div></div>);}
-function OrderModal({close,cart,total,setCart,setModal}){return(<div className="mbg" onClick={e=>{if(e.target===e.currentTarget)close()}}><div className="modal"><div className="mhead"><h2>📦 ご注文内容</h2><button className="xbtn" onClick={close}>✕</button></div><div className="mbody"><div style={{marginBottom:"18px"}}>{cart.map(i=>(<div key={i.id} style={{display:"flex",justifyContent:"space-between",fontSize:"13px",padding:"7px 0",borderBottom:"1px solid #0d2030"}}><span style={{color:"#a0c0e0"}}>{i.name} <span style={{color:"#4a6a8a"}}>×{i.qty}</span></span><span style={{fontFamily:"'Orbitron',monospace",color:"#00f0ff",fontSize:"12px"}}>¥{(i.price*i.qty).toLocaleString()}</span></div>))}<div className="trow"><span>合計</span><span className="tprice">¥{total.toLocaleString()}</span></div></div><div className="ttbox"><h3>📩 ご購入・お問い合わせ</h3><p>ご購入を希望の方は<br/>TikTok DMにてメッセージをお送りください。</p><p style={{marginTop:"10px",fontSize:"14px"}}><strong style={{color:"#00f0ff",fontFamily:"'Orbitron',monospace",fontSize:"12px"}}>TikTok</strong><br/><strong style={{color:"#fff",fontSize:"15px"}}>モハ</strong><span style={{color:"#4a6a8a",fontSize:"12px",display:"block"}}>@user5410860884966</span></p><a className="ttlink" href={TIKTOK_URL} target="_blank" rel="noopener noreferrer"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.22 6.22 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.73z"/></svg>TikTokでモハに連絡する</a></div><button className="bfull bgray" onClick={()=>{close();setModal("cart")}}>← カートに戻る</button></div></div></div>);}
+// ─── CART MODAL ─────────────────────────────────
+function CartModal({close,cart,remove,changeQty,total,setModal}){
+  return(
+    <div className="mbg" onClick={e=>{if(e.target===e.currentTarget)close()}}>
+      <div className="modal">
+        <div className="mhead">
+          <h2>🛒 カート ({cart.length}点)</h2>
+          <button className="xbtn" onClick={close}>✕</button>
+        </div>
+        <div className="mbody">
+          {cart.length===0
+            ?<div className="empty" style={{padding:"40px"}}>カートは空です</div>
+            :<>
+              {cart.map(item=>(
+                <div key={item.id} className="citem">
+                  <img className="cimg2" src={item.img} alt={item.name} onError={e=>{e.target.src="https://placehold.co/68/070f18/00f0ff?text=IMG"}}/>
+                  <div className="cinfo">
+                    <div className="cname2">{item.name}</div>
+                    <div className="cprice2">¥{item.price.toLocaleString()}</div>
+                    <div className="qctrl">
+                      <button className="qbtn" onClick={()=>changeQty(item.id,-1)}>−</button>
+                      <span style={{fontSize:"15px",minWidth:"24px",textAlign:"center",fontWeight:"700"}}>{item.qty}</span>
+                      <button className="qbtn" onClick={()=>changeQty(item.id,1)}>＋</button>
+                      <span style={{fontSize:"12px",color:"#4a6a8a",marginLeft:"2px"}}>¥{(item.price*item.qty).toLocaleString()}</span>
+                      <button className="delbtn" onClick={()=>remove(item.id)}>✕</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="trow">
+                <span>合計</span>
+                <span className="tprice">¥{total.toLocaleString()}</span>
+              </div>
+              <button className="bfull bcyan" style={{marginBottom:"10px"}} onClick={()=>{close();setModal("notice")}}>購入手続きへ →</button>
+              <button className="bfull bgray" onClick={close}>買い物を続ける</button>
+            </>
+          }
+        </div>
+      </div>
+    </div>
+  );
+}
 
-// AdminModal 書き換え: Firebase 連携 (onAddProduct, onDeleteProduct)
-function AdminModal({close, onAddProduct, onDeleteProduct, users}){
+// ─── NOTICE MODAL ────────────────────────────────
+function NoticeModal({close,cart,total,setModal}){
+  return(
+    <div className="mbg" onClick={e=>{if(e.target===e.currentTarget)close()}}>
+      <div className="modal">
+        <div className="mhead">
+          <h2>⚠ ご購入の注意事項</h2>
+          <button className="xbtn" onClick={close}>✕</button>
+        </div>
+        <div className="mbody">
+          <div className="notice-box">
+            <h3>購入前にご確認ください</h3>
+            {WARNINGS.map((w,i)=><div key={i} className="notice-item">{w}</div>)}
+          </div>
+          <button className="bfull bcyan" style={{marginBottom:"10px"}} onClick={()=>{close();setModal("order")}}>OK　→　購入ページへ</button>
+          <button className="bfull bgray" onClick={()=>{close();setModal("cart")}}>← カートに戻る</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ORDER MODAL ─────────────────────────────────
+function OrderModal({close,cart,total,setCart,setModal}){
+  return(
+    <div className="mbg" onClick={e=>{if(e.target===e.currentTarget)close()}}>
+      <div className="modal">
+        <div className="mhead">
+          <h2>📦 ご注文内容</h2>
+          <button className="xbtn" onClick={close}>✕</button>
+        </div>
+        <div className="mbody">
+          <div style={{marginBottom:"18px"}}>
+            {cart.map(i=>(
+              <div key={i.id} style={{display:"flex",justifyContent:"space-between",fontSize:"13px",padding:"7px 0",borderBottom:"1px solid #0d2030"}}>
+                <span style={{color:"#a0c0e0"}}>{i.name} <span style={{color:"#4a6a8a"}}>×{i.qty}</span></span>
+                <span style={{fontFamily:"'Orbitron',monospace",color:"#00f0ff",fontSize:"12px"}}>¥{(i.price*i.qty).toLocaleString()}</span>
+              </div>
+            ))}
+            <div className="trow"><span>合計</span><span className="tprice">¥{total.toLocaleString()}</span></div>
+          </div>
+          <div className="ttbox">
+            <h3>📩 ご購入・お問い合わせ</h3>
+            <p>ご購入を希望の方は<br/>TikTok DMにてメッセージをお送りください。</p>
+            <p style={{marginTop:"10px",fontSize:"14px"}}>
+              <strong style={{color:"#00f0ff",fontFamily:"'Orbitron',monospace",fontSize:"12px"}}>TikTok</strong><br/>
+              <strong style={{color:"#fff",fontSize:"15px"}}>モハ</strong>
+              <span style={{color:"#4a6a8a",fontSize:"12px",display:"block"}}>@user5410860884966</span>
+            </p>
+            <a className="ttlink" href={TIKTOK_URL} target="_blank" rel="noopener noreferrer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.22 6.22 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.73z"/></svg>
+              TikTokでモハに連絡する
+            </a>
+          </div>
+          <button className="bfull bgray" onClick={()=>{close();setModal("cart")}}>← カートに戻る</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ADMIN MODAL ──────────────────────────────────
+function AdminModal({close,products,setProducts,users}){
   const [tab,setTab]=useState("list");
   const [form,setForm]=useState({name:"",cat:CATS[1],price:"",img:"",desc:"",stock:""});
   const [imgPreview,setImgPreview]=useState("");
@@ -383,33 +550,182 @@ function AdminModal({close, onAddProduct, onDeleteProduct, users}){
   const [showCam,setShowCam]=useState(false);
   const videoRef=useRef(null);
   const streamRef=useRef(null);
-  const startCamera=async()=>{try{const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false}); streamRef.current=s; if(videoRef.current)videoRef.current.srcObject=s; setShowCam(true);}catch(e){alert("カメラにアクセスできません")}};
-  const stopCamera=()=>{if(streamRef.current)streamRef.current.getTracks().forEach(t=>t.stop()); setShowCam(false);};
-  const snapPhoto=()=>{if(!videoRef.current)return; const cv=document.createElement("canvas"); cv.width=videoRef.current.videoWidth; cv.height=videoRef.current.videoHeight; cv.getContext("2d").drawImage(videoRef.current,0,0); const data=cv.toDataURL("image/jpeg",0.85); setImgPreview(data); setForm(f=>({...f,img:data})); stopCamera();};
-  const handleFileUpload=(e)=>{const file=e.target.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=ev=>{setImgPreview(ev.target.result); setForm(f=>({...f,img:ev.target.result}));}; reader.readAsDataURL(file);};
-  const handleAdd=async()=>{setErr("");setOk(""); if(!form.name.trim()||!form.price||!form.stock){setErr("商品名・価格・在庫は必須です");return;} const imgUrl=form.img||"https://placehold.co/400x175/070f18/00f0ff?text=NEW+GEAR"; await onAddProduct({...form, price:parseInt(form.price), stock:parseInt(form.stock), img:imgUrl}); setOk("✓ 商品をFirestoreに追加しました (リアルタイム反映)"); setForm({name:"",cat:CATS[1],price:"",img:"",desc:"",stock:""}); setImgPreview(""); setTimeout(()=>setOk(""),3500);};
-  const delProd=async(id)=>{if(window.confirm("この商品を削除しますか？")){await onDeleteProduct(id); setOk("🗑 削除しました"); setTimeout(()=>setOk(""),2000);}};
-  // 商品一覧は App から渡されないが、リアルタイム listener で App 側products反映 → AdminModalで表示するには users? 商品リストは表示したいため、productsをpropsで受け取る必要があるが、元の設計がproducts渡しじゃないため、AdminModal内でFirestore購読は煩雑。よって管理画面では単純に削除のみ提供し、商品一覧を表示できない？代わりに簡易表示できない。しかし「商品一覧」タブで現在の商品リストを表示するために、productsをAppから渡す。少し改修する。
-  // ここでproductsを追加で受け取るが、今回はもともとAdminModalの商品一覧で表示していた。すでにonDeleteProductを使って削除するため一覧が必要。Appからproductsを渡すように変更する。AppのAdminModalにproductsを追加で渡す。
-  // 以下ではApp側でproductsを渡すようにしている前提で実装。
-  // しかし今回は動作させるため、商品一覧を表示するための仮firestore購読をここで行う(簡易)。ただし読み込みの重複を避けるため、実用的には Props で products を受け取るよう直す。 ← 修正: App内でAdminModalにproductsを渡す処理を追加済み
-  // 完成版ではAppからAdminModalへproductsを渡すようにする (下記)
-  // このAdminModalは Products が props で渡されることを期待して記述
-  const productsFromProps = window.__adminProducts || []; // 仮
-  return(<div className="mbg" onClick={e=>{if(e.target===e.currentTarget){stopCamera();close()}}}><div className="modal modal-wide"><div className="mhead"><h2>⚙ 管理画面</h2><button className="xbtn" onClick={()=>{stopCamera();close()}}>✕</button></div><div className="mbody"><div className="tabrow"><div className={"tab"+(tab==="list"?" act":"")} onClick={()=>setTab("list")}>商品一覧</div><div className={"tab"+(tab==="add"?" act":"")} onClick={()=>setTab("add")}>商品追加</div><div className={"tab"+(tab==="users"?" act":"")} onClick={()=>setTab("users")}>ユーザー</div></div>{tab==="list"&&(<div><h3 className="asec">📦 リアルタイム商品</h3>{productsFromProps.length===0?<div style={{color:"#2a4a6a",padding:"30px",textAlign:"center"}}>商品データを読込中...</div>:productsFromProps.map(p=>(<div key={p.id} className="prow"><img className="piimg" src={p.img} alt={p.name} onError={e=>e.target.src="https://placehold.co/46/070f18/00f0ff?text=IMG"}/><div className="pinfo"><div className="pname2">{p.name}</div><div className="pmeta">{p.cat} | ¥{p.price.toLocaleString()} | 在庫:{p.stock}</div></div><button className="dbtn" onClick={()=>delProd(p.id)}>削除</button></div>))}</div>)}{tab==="add"&&(<div>{err&&<div className="err">{err}</div>}{ok&&<div className="ok">{ok}</div>}<label className="inp-label">商品名 *</label><input className="inp" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/><label className="inp-label">カテゴリー</label><select className="inp" value={form.cat} onChange={e=>setForm(f=>({...f,cat:e.target.value}))}>{CATS.slice(1).map(c=><option key={c}>{c}</option>)}</select><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}><div><label className="inp-label">価格（円）*</label><input className="inp" type="number" value={form.price} onChange={e=>setForm(f=>({...f,price:e.target.value}))}/></div><div><label className="inp-label">在庫数 *</label><input className="inp" type="number" value={form.stock} onChange={e=>setForm(f=>({...f,stock:e.target.value}))}/></div></div><label className="inp-label">商品画像</label>{showCam?(<div><video ref={videoRef} className="cam" autoPlay playsInline muted/><button className="snap-btn" onClick={snapPhoto}>📸 撮影する</button><button className="close-cam" onClick={stopCamera}>キャンセル</button></div>):(<><div className="upload-area"><input type="file" accept="image/*" onChange={handleFileUpload}/><div className="upload-text">📁 <span>ファイルを選択</span> またはドラッグ&ドロップ</div></div><button className="camera-btn" onClick={startCamera}>📷 カメラで撮影する</button><input className="inp" placeholder="画像URL" value={form.img.startsWith("data:")?"":form.img} onChange={e=>{setForm(f=>({...f,img:e.target.value}));setImgPreview(e.target.value)}}/></>)}{imgPreview&&!showCam&&(<div><img src={imgPreview} alt="preview" className="img-prev"/><button onClick={()=>{setImgPreview("");setForm(f=>({...f,img:""}))}} style={{background:"transparent",border:"1px solid #1a3a5c",color:"#ff6699",cursor:"pointer",borderRadius:"5px",padding:"5px 12px",marginBottom:"13px"}}>✕ 画像を削除</button></div>)}<label className="inp-label">商品説明（任意）</label><textarea className="inp" rows="3" value={form.desc} onChange={e=>setForm(f=>({...f,desc:e.target.value}))}/><button className="bfull bcyan" onClick={handleAdd}>＋　商品を追加する</button></div>)}{tab==="users"&&(<div><h3 className="asec">登録ユーザー — {users.length}人</h3>{users.length===0?<div style={{textAlign:"center",padding:"30px"}}>ユーザーはまだいません</div>:users.map(u=>(<div key={u.id} className="urow"><div className="uav">{u.name[0]?.toUpperCase()||"?"}</div><div className="uinfo"><div className="uname3">{u.name}{u.isGoogle&&<span style={{marginLeft:"7px",fontSize:"10px",color:"#4285f4",border:"1px solid #4285f440",padding:"1px 6px",borderRadius:"8px"}}>Google</span>}</div><div className="uemail">{u.email}</div></div></div>))}</div>)}</div></div></div>);
+  const canvasRef=useRef(null);
+
+  async function startCamera(){
+    try{
+      const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+      streamRef.current=s;
+      if(videoRef.current)videoRef.current.srcObject=s;
+      setShowCam(true);
+    }catch(e){alert("カメラにアクセスできませんでした")}
+  }
+  function stopCamera(){
+    if(streamRef.current)streamRef.current.getTracks().forEach(t=>t.stop());
+    setShowCam(false);
+  }
+  function snapPhoto(){
+    if(!videoRef.current)return;
+    const cv=document.createElement("canvas");
+    cv.width=videoRef.current.videoWidth;
+    cv.height=videoRef.current.videoHeight;
+    cv.getContext("2d").drawImage(videoRef.current,0,0);
+    const data=cv.toDataURL("image/jpeg",0.85);
+    setImgPreview(data);
+    setForm(f=>({...f,img:data}));
+    stopCamera();
+  }
+  function handleFileUpload(e){
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      setImgPreview(ev.target.result);
+      setForm(f=>({...f,img:ev.target.result}));
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleAdd(){
+    setErr("");setOk("");
+    if(!form.name.trim()||!form.price||!form.stock){setErr("商品名・価格・在庫は必須です");return;}
+    const imgUrl=form.img||"https://placehold.co/400x175/070f18/00f0ff?text=NO+IMAGE";
+    const newProd={name:form.name.trim(),cat:form.cat,price:parseInt(form.price)||0,stock:parseInt(form.stock)||0,img:imgUrl,desc:form.desc,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+    try{
+      await db.collection("products").add(newProd);
+      setOk("✓ 商品を追加しました！");
+      setForm({name:"",cat:CATS[1],price:"",img:"",desc:"",stock:""});
+      setImgPreview("");
+      setTimeout(()=>setOk(""),3500);
+    }catch(e){setErr("エラー: "+e.message);}
+  }
+  async function delProd(id){if(window.confirm("この商品を削除しますか？"))try{await db.collection("products").doc(id).delete();}catch(e){alert("削除失敗: "+e.message);}}
+
+  return(
+    <div className="mbg" onClick={e=>{if(e.target===e.currentTarget){stopCamera();close()}}}>
+      <div className="modal modal-wide">
+        <div className="mhead">
+          <h2>⚙ 管理画面</h2>
+          <button className="xbtn" onClick={()=>{stopCamera();close()}}>✕</button>
+        </div>
+        <div className="mbody">
+          <div className="tabrow">
+            <div className={"tab"+(tab==="list"?" act":"")} onClick={()=>setTab("list")}>商品一覧</div>
+            <div className={"tab"+(tab==="add"?" act":"")} onClick={()=>setTab("add")}>商品追加</div>
+            <div className={"tab"+(tab==="users"?" act":"")} onClick={()=>setTab("users")}>ユーザー</div>
+          </div>
+
+          {/* PRODUCT LIST */}
+          {tab==="list"&&(
+            <div>
+              <div className="asec">
+                <h3>登録商品 — {products.length}件</h3>
+              </div>
+              {products.length===0
+                ?<div style={{color:"#2a4a6a",textAlign:"center",padding:"30px",fontSize:"13px",fontFamily:"'Orbitron',monospace"}}>商品がまだ登録されていません</div>
+                :products.map(p=>(
+                  <div key={p.id} className="prow">
+                    <img className="piimg" src={p.img} alt={p.name} onError={e=>{e.target.src="https://placehold.co/46/070f18/00f0ff?text=IMG"}}/>
+                    <div className="pinfo">
+                      <div className="pname2">{p.name}</div>
+                      <div className="pmeta">{p.cat} | ¥{p.price.toLocaleString()} | 在庫:{p.stock}</div>
+                    </div>
+                    <button className="dbtn" onClick={()=>delProd(p.id)}>削除</button>
+                  </div>
+                ))
+              }
+            </div>
+          )}
+
+          {/* ADD PRODUCT */}
+          {tab==="add"&&(
+            <div>
+              {err&&<div className="err">{err}</div>}
+              {ok&&<div className="ok">{ok}</div>}
+
+              <label className="inp-label">商品名 *</label>
+              <input className="inp" placeholder="例: ProX メカニカルキーボード RGB" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+
+              <label className="inp-label">カテゴリー *</label>
+              <select className="inp" value={form.cat} onChange={e=>setForm(f=>({...f,cat:e.target.value}))}>
+                {CATS.slice(1).map(c=><option key={c}>{c}</option>)}
+              </select>
+
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                <div>
+                  <label className="inp-label">価格（円）*</label>
+                  <input className="inp" type="number" placeholder="例: 12800" value={form.price} onChange={e=>setForm(f=>({...f,price:e.target.value}))}/>
+                </div>
+                <div>
+                  <label className="inp-label">在庫数 *</label>
+                  <input className="inp" type="number" placeholder="例: 10" value={form.stock} onChange={e=>setForm(f=>({...f,stock:e.target.value}))}/>
+                </div>
+              </div>
+
+              <label className="inp-label">商品画像</label>
+              {/* Camera */}
+              {showCam?(
+                <div>
+                  <video ref={videoRef} className="cam" autoPlay playsInline muted/>
+                  <button className="snap-btn" onClick={snapPhoto}>📸 撮影する</button>
+                  <button className="close-cam" onClick={stopCamera}>キャンセル</button>
+                </div>
+              ):(
+                <>
+                  <div className="upload-area">
+                    <input type="file" accept="image/*" onChange={handleFileUpload}/>
+                    <div className="upload-text">📁 <span>ファイルを選択</span> またはドラッグ&ドロップ</div>
+                  </div>
+                  <button className="camera-btn" onClick={startCamera}>📷 カメラで撮影する</button>
+                  <label className="inp-label">または画像URL</label>
+                  <input className="inp" placeholder="https://..." value={form.img.startsWith("data:")?"":(form.img||"")} onChange={e=>{setForm(f=>({...f,img:e.target.value}));setImgPreview(e.target.value)}}/>
+                </>
+              )}
+
+              {imgPreview&&!showCam&&(
+                <div>
+                  <img src={imgPreview} alt="プレビュー" className="img-prev" onError={e=>{e.target.style.display="none"}}/>
+                  <button onClick={()=>{setImgPreview("");setForm(f=>({...f,img:""}))}} style={{background:"transparent",border:"1px solid #1a3a5c",color:"#ff6699",cursor:"pointer",borderRadius:"5px",padding:"5px 12px",fontSize:"12px",marginBottom:"13px",fontFamily:"'Rajdhani',sans-serif",fontWeight:"700"}}>✕ 画像を削除</button>
+                </div>
+              )}
+
+              <label className="inp-label">商品説明（任意）</label>
+              <textarea className="inp" placeholder="商品の特徴・スペックなど..." rows="3" value={form.desc} onChange={e=>setForm(f=>({...f,desc:e.target.value}))}/>
+
+              <button className="bfull bcyan" onClick={handleAdd}>＋　商品を追加する</button>
+            </div>
+          )}
+
+          {/* USERS */}
+          {tab==="users"&&(
+            <div>
+              <div className="asec">
+                <h3>登録ユーザー — {users.length}人</h3>
+              </div>
+              {users.length===0
+                ?<div style={{color:"#2a4a6a",textAlign:"center",padding:"30px",fontSize:"13px",fontFamily:"'Orbitron',monospace"}}>ユーザーはまだいません</div>
+                :users.map(u=>(
+                  <div key={u.id} className="urow">
+                    <div className="uav">{u.name[0]?.toUpperCase()||"?"}</div>
+                    <div className="uinfo">
+                      <div className="uname3">
+                        {u.name}
+                        {u.isGoogle&&<span style={{marginLeft:"7px",fontSize:"10px",color:"#4285f4",border:"1px solid #4285f440",padding:"1px 6px",borderRadius:"8px",fontWeight:"700"}}>Google</span>}
+                      </div>
+                      <div className="uemail">{u.email}</div>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
-// 修正 AppでAdminModalにproductsを渡すためにラップ
-const AppWithAdminProps = () => {
-  const appInstance = <App />;
-  // override: 実際のレンダリングで対応済み → 上記AppでAdminModal呼び出し時にproductsを渡すように変更済み。最終的な整合性はApp内のAdminModalでproductsを渡すようにした。
-  return appInstance;
-};
-
-// 本当の最終レンダリング: App内のAdminModalにproductsを追加して渡すよう修正済み。念の為。
-// (App内のreturnに記述したAdminModalにproducts={products}を追加)
-// 最後に global render
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
