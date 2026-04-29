@@ -220,14 +220,39 @@ function App(){
   const [search,setSearch]=useState("");
 
   useEffect(()=>{
-    const unsub=db.collection("products").orderBy("createdAt","desc").onSnapshot(snap=>{
-      setProducts(snap.docs.map(d=>({id:d.id,...d.data()})));
-    },()=>{
-      const unsub2=db.collection("products").onSnapshot(snap=>{
+    let unsub=null;
+    let poll=null;
+
+    async function fetchOnce(){
+      try{
+        const snap=await db.collection("products").get();
         setProducts(snap.docs.map(d=>({id:d.id,...d.data()})));
-      });
-    });
-    return()=>unsub();
+      }catch(e){console.warn("[MOHA] fetch error:",e);}
+    }
+
+    function startPolling(){
+      fetchOnce();
+      poll=setInterval(fetchOnce,10000);
+    }
+
+    try{
+      unsub=db.collection("products").onSnapshot(
+        snap=>{setProducts(snap.docs.map(d=>({id:d.id,...d.data()})));},
+        err=>{
+          console.warn("[MOHA] onSnapshot失敗、ポーリングに切替:",err);
+          if(unsub){try{unsub();}catch(_){} unsub=null;}
+          startPolling();
+        }
+      );
+    }catch(e){
+      console.warn("[MOHA] onSnapshot初期化失敗:",e);
+      startPolling();
+    }
+
+    return()=>{
+      if(unsub)try{unsub();}catch(_){}
+      if(poll)clearInterval(poll);
+    };
   },[]);
   useEffect(()=>{setLS("moha_users",users)},[users]);
 
@@ -590,7 +615,7 @@ function AdminModal({close,products,setProducts,users}){
     setErr("");setOk("");
     if(!form.name.trim()||!form.price||!form.stock){setErr("商品名・価格・在庫は必須です");return;}
     const imgUrl=form.img||"https://placehold.co/400x175/070f18/00f0ff?text=NO+IMAGE";
-    const newProd={name:form.name.trim(),cat:form.cat,price:parseInt(form.price)||0,stock:parseInt(form.stock)||0,img:imgUrl,desc:form.desc,createdAt:firebase.firestore.FieldValue.serverTimestamp()};
+    const newProd={name:form.name.trim(),cat:form.cat,price:parseInt(form.price)||0,stock:parseInt(form.stock)||0,img:imgUrl,desc:form.desc,createdAt:Date.now()};
     try{
       await db.collection("products").add(newProd);
       setOk("✓ 商品を追加しました！");
